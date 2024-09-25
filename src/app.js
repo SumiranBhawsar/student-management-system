@@ -16,4 +16,11 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 
+
+// Routes Import
+import adminRouter from "./routes/admin.routes.js"
+
+// Routes Declaration
+app.use("/api/v1/admin", adminRouter);
+
 export { app };
