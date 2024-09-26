@@ -36,15 +36,15 @@ const registerAdmin = asyncHandler(async (req, res) => {
     }
 
     if (secreteKey !== process.env.ADMIN_LOGIN_SECRETE_KEY) {
-        throw new ApiError(401);
+        throw new ApiError(401, "SCRETE key are INVALID");
     }
-
-    console.log(req.files);
 
     const profilePictureLocalPath = req.files?.profilePicture[0]?.path;
 
-    if (!profilePicture) {
-        throw new ApiError(400, "Profile picture is required");
+    console.log(profilePictureLocalPath);
+    
+    if (!profilePictureLocalPath) {
+        throw new ApiError(400, "PROFILE picture is REQUIRED");
     }
 
     const profilePicture = await uploadOnCloudinary(profilePictureLocalPath);
@@ -57,18 +57,20 @@ const registerAdmin = asyncHandler(async (req, res) => {
         username: username.toLowerCase(),
         email,
         password,
-        profilePicture,
+        profilePicture: profilePicture.url,
         secreteKey,
     });
 
     const createdAdmin = await Admin.findById(admin._id).select(
-        "-password -refreshToken"
+        "-password -refreshToken -secreteKey"
     );
 
     if (!createdAdmin) {
         throw new ApiError(500, "Server Error");
     }
 
+    console.log(createdAdmin);
+    
     return res
         .status(201)
         .json(

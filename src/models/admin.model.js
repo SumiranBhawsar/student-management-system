@@ -49,7 +49,7 @@ adminSchema.pre("save", async function (next) {
 
     try {
         const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(admin.password, salt);
+        admin.password = await bcrypt.hash(admin.password, salt);
     } catch (error) {
         next(error);
     }

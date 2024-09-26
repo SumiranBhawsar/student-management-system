@@ -1,38 +1,32 @@
 import { v2 as cloudinary } from "cloudinary";
-import { log } from "console";
 import fs from "fs";
-import { env } from "process";
-
-// cloudinary configuration setting ye apko file upload karne ki permission deta he
 
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET, // Click 'View API Keys' above to copy your API secret
 });
 
-// file upload kese karte he
-
 const uploadOnCloudinary = async (localFilePath) => {
-    try {
-        if (!localFilePath) return null;
-        // upload the file on cloudinary
-
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            public_id: "profileImage",
-            resource_type: "auto",
-        });
-
-        console.log(
-            "File is uploaded on cloudinary successfull : ",
-            response.url
-        );
-
-        return response.url;
-    } catch (error) {
-        fs.unlinkSync(localFilePath);
-        return null;
-    }
+  try {
+    if (!localFilePath) return console.log("cloud't find the path");
+    // Upload the file on cloudinary
+    const response = await cloudinary.uploader
+      .upload(
+        localFilePath,
+        {
+          resource_type: "auto",
+        }
+      )
+      // file has been upload successfully
+      // console.log("file is upload successfully : ",response);
+      fs.unlinkSync(localFilePath);
+      return response;
+      
+  } catch (error) {
+      fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation got failed 
+      return null; 
+  }
 };
 
 export { uploadOnCloudinary };

@@ -7,7 +7,12 @@ const router = Router();
 
 router.route("/register").post(
     checkAdminExists,
-    upload.single("profilePicture"), // Multer middleware to handle file uploads
+    upload.fields([
+        {
+            name: "profilePicture",
+            maxCount: 1 // only one file   
+        }
+    ]), // Multer middleware to handle file uploads
     registerAdmin
 );
 
