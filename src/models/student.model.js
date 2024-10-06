@@ -2,39 +2,45 @@ import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const adminSchema = new Schema(
+
+const studentsSchema = new Schema(
     {
-        username: {
+        studentName: {
             type: String,
             required: true,
             trim: true,
-            toLowerCase: true,
-            index: true,
         },
         email: {
             type: String,
             required: true,
             unique: true,
             trim: true,
-            toLowerCase: true,
+            lowercase: true,
             index: true,
-        },
-        profilePicture: {
-            type: String,
-            required: true,
         },
         password: {
             type: String,
             required: [true, "Password is required"],
         },
-        secreteKey: {
+        dob: {
             type: String,
             required: true,
-            trim: true,
         },
-        refreshToken: {
+        enrollmentNumber: {
             type: String,
-            default: null,
+            required: true,
+            unique: true,
+            trim: true,
+            index: true,
+        },
+        department: {
+            type: Schema.Types.ObjectId,
+            ref: "Department",
+            // required: true,
+        },
+        studentProfile: {
+            type: String,
+            required: true,
         },
         isVerified: {
             type: Boolean,
@@ -44,36 +50,42 @@ const adminSchema = new Schema(
         resetPasswordExpiresAt: Date,
         verificationToken: String,
         verificationTokenExpiresAt: Date,
+        refreshToken: {
+            type: String,
+            default: null,
+        }
     },
     {
         timestamps: true,
     }
 );
 
-adminSchema.pre("save", async function (next) {
-    const admin = this;
 
-    if (!admin.isModified("password")) return next();
+studentsSchema.pre("save", async function (next) {
+    const student = this;
+
+    if (!student.isModified("password")) return next();
 
     try {
         const salt = await bcrypt.genSalt(10);
-        admin.password = await bcrypt.hash(admin.password, salt);
+        student.password = await bcrypt.hash(student.password, salt);
     } catch (error) {
         next(error);
     }
 });
 
-adminSchema.methods.isPasswordCorrect = async function (password) {
-    const admin = this;
-    return await bcrypt.compare(password, admin.password);
+
+studentsSchema.methods.isPasswordCorrect = async function (password) {
+    const student = this;
+    return await bcrypt.compare(password, student.password);
 };
 
-adminSchema.methods.generateAccessToken = function () {
-    const admin = this;
+studentsSchema.methods.generateAccessToken = function () {
+    const student = this;
     return jwt.sign(
         {
-            _id: admin._id,
-            email: admin.email,
+            _id: student._id,
+            email: student.email,
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
@@ -83,11 +95,11 @@ adminSchema.methods.generateAccessToken = function () {
 };
 
 
-adminSchema.methods.generateRefreshToken = function () {
-    const admin = this;
+studentsSchema.methods.generateRefreshToken = function () {
+    const student = this;
     return jwt.sign(
         {
-            _id: admin._id,
+            _id: student._id,
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
@@ -98,4 +110,4 @@ adminSchema.methods.generateRefreshToken = function () {
 
 
 
-export const Admin = mongoose.model("Admin", adminSchema);
+export const Student = mongoose.model("Student", studentsSchema);

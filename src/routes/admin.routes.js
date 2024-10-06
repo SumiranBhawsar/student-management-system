@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerAdmin } from "../controllers/admin.controller.js";
+import { registerAdmin, registerStudent } from "../controllers/admin.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { checkAdminExists } from "../middlewares/checkAdminExists.middleware.js";
 
@@ -15,5 +15,15 @@ router.route("/register").post(
     ]), // Multer middleware to handle file uploads
     registerAdmin
 );
+
+router.route("/register-student").post(
+    upload.fields([
+        {
+            name: "studentProfile",
+            maxCount: 1 // only one file   
+        }
+    ]),
+    registerStudent
+)
 
 export default router;

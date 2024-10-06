@@ -13,7 +13,7 @@ const checkAdminExists = asyncHandler( async (req, res, next) => {
         next();
 
     } catch (error) {
-        throw new ApiError(500, "Internal Server Error");
+        throw new ApiError(400, "Admin already exists you can not create more");
     }
 });
 
