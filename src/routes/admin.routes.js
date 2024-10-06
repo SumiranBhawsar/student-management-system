@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { registerAdmin, registerStudent } from "../controllers/admin.controller.js";
+import { registerAdmin } from "../controllers/admin.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { checkAdminExists } from "../middlewares/checkAdminExists.middleware.js";
+import { registerStudent } from "../controllers/student.controller.js";
 
 const router = Router();
 
