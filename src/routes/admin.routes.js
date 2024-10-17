@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { registerAdmin } from "../controllers/admin.controller.js";
+import { registerAdmin, verifyEmail, loginAdmin } from "../controllers/admin.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { checkAdminExists } from "../middlewares/checkAdminExists.middleware.js";
-import { registerStudent } from "../controllers/student.controller.js";
+import { registerStudent, verifyStudentEmail } from "../controllers/student.controller.js";
 
 const router = Router();
 
@@ -25,6 +25,18 @@ router.route("/register-student").post(
         }
     ]),
     registerStudent
+)
+
+router.route("/login-admin").post(
+    loginAdmin
+)
+
+router.route("/verify-email").post(
+    verifyEmail
+)
+
+router.route("/verify-student-email").post(
+    verifyStudentEmail
 )
 
 export default router;

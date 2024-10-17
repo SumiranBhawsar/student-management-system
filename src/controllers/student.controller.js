@@ -4,7 +4,7 @@ import { emailValidator } from "../validations/email.validation.js";
 import { Admin } from "../models/admin.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { sendVerificationEmail } from "../mail/emails.js";
+import { sendVerificationEmail, sendWelcomeEmail } from "../mail/emails.js";
 import { Student } from "../models/student.model.js";
 
 
@@ -103,4 +103,44 @@ const registerStudent = asyncHandler( async (req, res) => {
 })
 
 
-export { registerStudent };
+const verifyStudentEmail = asyncHandler(async (req, res) => {
+    // verification code from req.body
+    // find the user that is hold the same verification code
+    // if user not found throw error
+    // verify user is not already verified
+    // if user already verified throw error
+    // update user status to verified
+    // update user verification Token undefined
+    // update user verificationTokenExpiresAt undefined
+    // send welcome email to user
+
+    const { code } = req.body;
+
+    const student = await Student.findOne({
+        $or: [
+            { verificationToken: code },
+            { verificationTokenExpiresAt: { $gt: Date.now() } },
+        ],
+    });
+
+    if (student.isVerified) {
+        throw new ApiError(400, "User is already verified");
+    }
+
+    student.isVerified = true;
+    student.verificationToken = undefined;
+    student.verificationTokenExpiresAt = undefined;
+
+    await student.save();
+
+    await sendWelcomeEmail(student.email, student.username);
+
+    res.status(200).json(
+        new ApiResponse(200, student, "User verified successfully")
+    );
+});
+
+export {
+    registerStudent,
+    verifyStudentEmail
+};

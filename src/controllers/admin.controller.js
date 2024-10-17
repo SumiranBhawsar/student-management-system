@@ -4,8 +4,25 @@ import { emailValidator } from "../validations/email.validation.js";
 import { Admin } from "../models/admin.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { sendVerificationEmail } from "../mail/emails.js";
-import { Student } from "../models/student.model.js";
+import { sendVerificationEmail, sendWelcomeEmail } from "../mail/emails.js";
+
+const generateAccessAndRefreshToken = async (adminId) => {
+    try {
+        const admin = await Admin.findById(adminId);
+        const accessToken = admin.generateAccessToken();
+        const refreshToken = admin.generateRefreshToken();
+
+        admin.refreshToken = refreshToken;
+        await admin.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
+    } catch (error) {
+        throw new ApiError(
+            500,
+            "Something went wrong While generating access token and refresh token."
+        );
+    }
+};
 
 const registerAdmin = asyncHandler(async (req, res) => {
     // get user details from req.body
@@ -78,48 +95,117 @@ const registerAdmin = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Server Error");
     }
 
-    const sendedEmail = await sendVerificationEmail(createdAdmin.email, createdAdmin.verificationToken)
+    const sendedEmail = await sendVerificationEmail(
+        createdAdmin.email,
+        createdAdmin.verificationToken
+    );
 
     console.log(sendedEmail);
-    
+
     console.log(createdAdmin);
 
     return res
         .status(201)
         .json(
+            new ApiResponse(200, createdAdmin, "Admin registered successfully")
+        );
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+    // verification code from req.body
+    // find the user that is hold the same verification code
+    // if user not found throw error
+    // verify user is not already verified
+    // if user already verified throw error
+    // update user status to verified
+    // update user verification Token undefined
+    // update user verificationTokenExpiresAt undefined
+    // send welcome email to user
+
+    const { code } = req.body;
+
+    const admin = await Admin.findOne({
+        $or: [
+            { verificationToken: code },
+            { verificationTokenExpiresAt: { $gt: Date.now() } },
+        ],
+    });
+
+    if (admin.isVerified) {
+        throw new ApiError(400, "User is already verified");
+    }
+
+    admin.isVerified = true;
+    admin.verificationToken = undefined;
+    admin.verificationTokenExpiresAt = undefined;
+
+    await admin.save();
+
+    await sendWelcomeEmail(admin.email, admin.username);
+
+    res.status(200).json(
+        new ApiResponse(200, admin, "User verified successfully")
+    );
+});
+
+const loginAdmin = asyncHandler(async (req, res) => {
+    // extrect data from body
+    // validation not empty
+    // email formate validate
+    // find user in db
+    // check password
+    // generate jwt token, access and refresh token
+    // send cookies
+    // send response
+
+    const { email, password } = req.body;
+
+    if (!email) {
+        throw new ApiError(400, "Email is required");
+    }
+
+    const validatedEmail = emailValidator(email);
+
+    if (!validatedEmail) {
+        throw new ApiError(400, "Invalid email");
+    }
+
+    const admin = await Admin.findOne({ email });
+
+    if (!admin) {
+        throw new ApiError(401, "Invalid email or password");
+    }
+
+    const isPasswordValid = await admin.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid email or password");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+        admin._id
+    );
+
+    const loggedInAdmin = await Admin.findById(admin._id).select(
+        "-password -refreshToken"
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
             new ApiResponse(
-                200, 
-                createdAdmin, 
-                "Admin registered successfully"
+                200,
+                { user: loggedInAdmin, accessToken, refreshToken },
+                "Admin logged in successfully"
             )
         );
 });
 
-// const verifyEmail = asyncHandler( async (req, res) => {
-//     const {code} = req.body;
-
-//     try {
-//         const admin = await Admin.findOne({
-//             $or: [{verificationToken: code}, {verificationTokenExpiresAt: { $gt: Date.now() }}]
-//         })
-
-//         if(!admin) {
-//             throw new ApiError(401, "Invalid or expired verification code");
-//         }
-
-//         admin.isVerified = true;
-//         admin.verificationToken = undefined;
-//         admin.verificationTokenExpiresAt = undefined;
-
-//         await admin.save();
-
-//         // await sendWelcomeEmail(admin.email, admin.username)
-
-//     } catch (error) {
-        
-//     }
-// })
-
-
-
-export { registerAdmin };
+export { registerAdmin, verifyEmail, loginAdmin };
